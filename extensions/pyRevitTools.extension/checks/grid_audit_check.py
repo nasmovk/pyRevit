@@ -149,11 +149,7 @@ def check_model_grids(doc, output):
     table_data.append(EMPTY_ROW)
     table_data.append(["<b>Y-ORTHOGONAL</b>", "", "", "", "", ""])
     table_data.extend(sorted(table_y_ortho_rows, key=lambda row: numerical_or_string_key(row[2])))
-<<<<<<< HEAD
     table_data.append(["", "Total", "<b>{}</b> X-orthogonal (vertical)".format(total_y), "", ""])
-=======
-    table_data.append(["", "Total", "<b>{}</b> Y-orthogonal (vertical)".format(total_y), "", ""])
->>>>>>> 153ba971643c537df684bdb8f32cfdc26a3f54a4
     table_data.append(EMPTY_ROW)
     table_data.append(["<b>NON-ORTHOGONAL</b>", "", "", "", "", ""])
     table_data.extend(sorted(table_non_ortho_rows, key=lambda row: numerical_or_string_key(row[2])))
@@ -161,29 +157,16 @@ def check_model_grids(doc, output):
     table_data.append(EMPTY_ROW)
     table_data.append(["<b>ARCS</b>", "", "", "", "", ""])
     table_data.extend(sorted(table_non_straight_rows, key=lambda row: numerical_or_string_key(row[2])))
-<<<<<<< HEAD
     table_data.append(["", "Total", "<b>{}</b> non-orthogonal (arcs)".format(total_non_straight), "", ""])
-=======
-    table_data.append(["", "Total", "<b>{}</b> non-orthogonal (arc)".format(total_non_straight), "", ""])
->>>>>>> 153ba971643c537df684bdb8f32cfdc26a3f54a4
     table_data.append(EMPTY_ROW)
 
     table_data.append(["", "Grand total", "<b>{}</b>".format(total_all), "", "", ""])
 
-<<<<<<< HEAD
     title = "Audit Grid instances in model '{}.rvt'".format(doc.Title)
-=======
-
-    print("Audit of project grids")
->>>>>>> 153ba971643c537df684bdb8f32cfdc26a3f54a4
     # Call output
     title="{}{}".format(doc.Title, ".rvt")
     columns = [
-<<<<<<< HEAD
             "Grid direction",
-=======
-            "Axis alignment",
->>>>>>> 153ba971643c537df684bdb8f32cfdc26a3f54a4
             "Select/Zoom",
             "Grid name",
             "Type",
