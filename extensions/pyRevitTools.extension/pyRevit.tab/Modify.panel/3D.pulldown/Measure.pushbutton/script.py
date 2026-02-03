@@ -3,7 +3,6 @@ from collections import deque
 from math import pi, atan, sqrt
 from pyrevit import HOST_APP, revit, forms, script
 from pyrevit import UI, DB
-from pyrevit.framework import System
 from Autodesk.Revit.Exceptions import InvalidOperationException
 
 logger = script.get_logger()
@@ -41,8 +40,6 @@ LINE_COLOR_Y = DB.ColorWithTransparency(0, 255, 0, 0)  # Green
 LINE_COLOR_Z = DB.ColorWithTransparency(0, 0, 255, 0)  # Blue
 LINE_COLOR_DIAG = DB.ColorWithTransparency(200, 200, 0, 0)  # Dark Yellow
 CUBE_COLOR = DB.ColorWithTransparency(255, 165, 0, 50)  # Orange
-
-WINDOW_POSITION = "measure_window_pos"
 
 
 def calculate_distances(point1, point2):
@@ -173,8 +170,8 @@ def validate_3d_view():
     active_view = uidoc.ActiveView
     if not isinstance(active_view, DB.View3D):
         forms.alert(
-            "Please activate a 3D view before using the 3D Measure tool.",
-            title="3D View Required",
+            measure_window.get_locale_string("Alert3DViewRequired"),
+            title=measure_window.get_locale_string("Alert3DViewRequiredTitle"),
             exitscript=True,
         )
         return False
@@ -188,13 +185,13 @@ def perform_measurement():
         return
 
     try:
-        with forms.WarningBar(title="Pick first point"):
+        with forms.WarningBar(title=measure_window.get_locale_string("WarningBarPickFirstPoint")):
             point1 = revit.pick_elementpoint(world=True)
             if not point1:
                 return
             create_and_show_point_mesh(point1)
 
-        with forms.WarningBar(title="Pick second point"):
+        with forms.WarningBar(title=measure_window.get_locale_string("WarningBarPickSecondPoint")):
             point2 = revit.pick_elementpoint(world=True)
             if not point2:
                 return
@@ -209,21 +206,18 @@ def perform_measurement():
 
         dx, dy, dz, diagonal, slope = calculate_distances(point1, point2)
 
-        measure_window.point1_text.Text = "Point 1: {}".format(format_point(point1))
-        measure_window.point2_text.Text = "Point 2: {}".format(format_point(point2))
-        measure_window.dx_text.Text = "ΔX: {:>15}".format(format_distance(dx))
-        measure_window.dy_text.Text = "ΔY: {:>15}".format(format_distance(dy))
-        measure_window.dz_text.Text = "ΔZ: {:>15}".format(format_distance(dz))
-        measure_window.diagonal_text.Text = "Diagonal: {}".format(
+        measure_window.point1_text.Text = measure_window.get_locale_string("Point1Format").format(format_point(point1))
+        measure_window.point2_text.Text = measure_window.get_locale_string("Point2Format").format(format_point(point2))
+        measure_window.dx_text.Text = measure_window.get_locale_string("DeltaXFormat").format(format_distance(dx))
+        measure_window.dy_text.Text = measure_window.get_locale_string("DeltaYFormat").format(format_distance(dy))
+        measure_window.dz_text.Text = measure_window.get_locale_string("DeltaZFormat").format(format_distance(dz))
+        measure_window.diagonal_text.Text = measure_window.get_locale_string("DiagonalFormat").format(
             format_distance(diagonal)
         )
-        measure_window.slope_text.Text = "Slope: {}".format(format_slope(slope))
+        measure_window.slope_text.Text = measure_window.get_locale_string("SlopeFormat").format(format_slope(slope))
 
         # Add to history
-        history_entry = (
-            "Measurement {}:\n  P1: {}\n  P2: {}\n  "
-            "ΔX: {:>15}\n  ΔY: {:>15}\n  ΔZ: {:>15}\n  "
-            "Diagonal: {}\n  Slope: {}".format(
+        history_entry = measure_window.get_locale_string("MeasurementHistoryEntry").format(
                 len(measurement_history) + 1,
                 format_point(point1),
                 format_point(point2),
@@ -233,7 +227,6 @@ def perform_measurement():
                 format_distance(diagonal),
                 format_slope(slope),
             )
-        )
         measurement_history.append(history_entry)
 
         # Update history display
@@ -246,16 +239,16 @@ def perform_measurement():
     except InvalidOperationException as ex:
         logger.error("InvalidOperationException during measurement: {}".format(ex))
         forms.alert(
-            "Measurement cancelled due to invalid operation. Please try again.",
-            title="Measurement Error",
+            measure_window.get_locale_string("AlertMeasurementCancelled"),
+            title=measure_window.get_locale_string("AlertMeasurementErrorTitle"),
         )
     except Exception as ex:
         logger.exception(
             "Error during measurement: {}".format(ex)
         )
         forms.alert(
-            "An unexpected error occurred during measurement. Check the log for details.",
-            title="Measurement Error",
+            measure_window.get_locale_string("AlertUnexpectedError"),
+            title=measure_window.get_locale_string("AlertMeasurementErrorTitle"),
         )
 
 
@@ -282,48 +275,31 @@ class MeasureWindow(forms.WPFWindow):
 
     def __init__(self, xaml_file_name):
         forms.WPFWindow.__init__(self, xaml_file_name, handle_esc=True)
-        self.point1_text.Text = "Point 1: Not selected"
-        self.point2_text.Text = "Point 2: Not selected"
-        self.dx_text.Text = "ΔX: -"
-        self.dy_text.Text = "ΔY: -"
-        self.dz_text.Text = "ΔZ: -"
-        self.diagonal_text.Text = "Diagonal: -"
-        self.slope_text.Text = "Slope: -"
-        self.history_text.Text = "No measurements yet"
+        self.point1_text.Text = self.get_locale_string("Point1NotSelected")
+        self.point2_text.Text = self.get_locale_string("Point2NotSelected")
+        self.dx_text.Text = self.get_locale_string("DeltaXFormat").format("-")
+        self.dy_text.Text = self.get_locale_string("DeltaYFormat").format("-")
+        self.dz_text.Text = self.get_locale_string("DeltaZFormat").format("-")
+        self.diagonal_text.Text = self.get_locale_string("DiagonalFormat").format("-")
+        self.slope_text.Text = self.get_locale_string("SlopeFormat").format("-")
+        self.history_text.Text = self.get_locale_string("NoMeasurementsYet")
 
         if not length_unit_symbol_label:
             self.show_element(self.project_unit_text)
             self.project_unit_text.Text = (
-                "Length Units (adjust in Project Units): \n" + length_unit_label
+                self.get_locale_string("ProjectUnitLengthUnits") + length_unit_label
             )
             self.Height = self.Height + 20
         if not slope_unit_symbol_label:
             self.show_element(self.project_unit_text)
             self.project_unit_text.Text = self.project_unit_text.Text + (
-                "\nSlope Units (adjust in Project Units): \n" + slope_unit_label
+                "\n" + self.get_locale_string("ProjectUnitSlopeUnits") + slope_unit_label
             )
             self.Height = self.Height + 20
 
         # Handle window close event
         self.Closed += self.window_closed
-
-        try:
-            pos = script.load_data(WINDOW_POSITION, this_project=False)
-            all_bounds = [s.WorkingArea for s in System.Windows.Forms.Screen.AllScreens]
-            x, y = pos["Left"], pos["Top"]
-            visible = any(
-                (b.Left <= x <= b.Right and b.Top <= y <= b.Bottom) for b in all_bounds
-            )
-            if not visible:
-                raise Exception
-            self.WindowStartupLocation = System.Windows.WindowStartupLocation.Manual
-            self.Left = pos.get("Left", 200)
-            self.Top = pos.get("Top", 150)
-        except Exception:
-            self.WindowStartupLocation = (
-                System.Windows.WindowStartupLocation.CenterScreen
-            )
-
+        script.restore_window_position(self)
         self.Show()
 
         # Automatically start the first measurement
@@ -332,15 +308,13 @@ class MeasureWindow(forms.WPFWindow):
     def window_closed(self, sender, args):
         """Handle window close event - copy history to clipboard, cleanup DC3D server and visual aids."""
         global dc3d_server
-        new_pos = {"Left": self.Left, "Top": self.Top}
-        script.store_data(WINDOW_POSITION, new_pos, this_project=False)
-
+        script.save_window_position(self)
         # Copy measurement history to clipboard before cleanup
         try:
             if measurement_history:
                 history_text = "\n".join(measurement_history)
                 script.clipboard_copy(history_text)
-                forms.toast("Measurements copied to Clipboard!", title="Measure 3D")
+                forms.toast(self.get_locale_string("ToastMeasurementsCopied"), title=self.get_locale_string("ToastMeasure3DTitle"))
         except Exception as ex:
             logger.error("Error copying to clipboard: {}".format(ex))
 
